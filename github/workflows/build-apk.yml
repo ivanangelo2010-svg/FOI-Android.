@@ -1,0 +1,49 @@
+name: Build FOI APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Descargar proyecto
+        uses: actions/checkout@v4
+
+      - name: Preparar Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Preparar Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Instalar Android 34
+        run: sdkmanager "platforms;android-34" "build-tools;34.0.0"
+
+      - name: Preparar Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.2'
+
+      - name: Extraer FOI
+        run: |
+          mkdir foi-src
+          unzip -q FOI-Android-GitHub.zip -d foi-src
+
+      - name: Compilar FOI
+        run: gradle -p foi-src :app:assembleDebug --stacktrace
+
+      - name: Preparar APK
+        run: cp foi-src/app/build/outputs/apk/debug/app-debug.apk FOI-debug.apk
+
+      - name: Subir APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: FOI-APK
+          path: FOI-debug.apk
